@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       ...body,
     };
 
-    const allFeedback = (await kv.get(FEEDBACK_KEY)) || [];
+    const allFeedback = ((await kv.get(FEEDBACK_KEY)) || []) as any[];
     allFeedback.push(feedback);
     await kv.set(FEEDBACK_KEY, allFeedback);
 
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const feedback = (await kv.get(FEEDBACK_KEY)) || [];
+    const feedback = ((await kv.get(FEEDBACK_KEY)) || []) as any[];
     return NextResponse.json(feedback);
   } catch (err) {
     return NextResponse.json(
