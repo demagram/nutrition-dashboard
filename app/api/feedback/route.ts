@@ -1,36 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { kv } from '@vercel/kv';
 
-const feedbackFile = path.join(process.cwd(), 'data', 'feedback.json');
-
-// Ensure data directory exists
-function ensureDataDir() {
-  const dataDir = path.join(process.cwd(), 'data');
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-}
-
-// Read existing feedback
-function readFeedback() {
-  ensureDataDir();
-  try {
-    if (fs.existsSync(feedbackFile)) {
-      const data = fs.readFileSync(feedbackFile, 'utf-8');
-      return JSON.parse(data);
-    }
-  } catch (err) {
-    console.error('Error reading feedback:', err);
-  }
-  return [];
-}
-
-// Write feedback
-function writeFeedback(feedback: any[]) {
-  ensureDataDir();
-  fs.writeFileSync(feedbackFile, JSON.stringify(feedback, null, 2));
-}
+const FEEDBACK_KEY = 'nutrition:feedback';
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,9 +13,9 @@ export async function POST(request: NextRequest) {
       ...body,
     };
 
-    const allFeedback = readFeedback();
+    const allFeedback = (await kv.get(FEEDBACK_KEY)) || [];
     allFeedback.push(feedback);
-    writeFeedback(allFeedback);
+    await kv.set(FEEDBACK_KEY, allFeedback);
 
     return NextResponse.json({ success: true, id: feedback.id });
   } catch (err) {
@@ -65,7 +36,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const feedback = readFeedback();
+    const feedback = (await kv.get(FEEDBACK_KEY)) || [];
     return NextResponse.json(feedback);
   } catch (err) {
     return NextResponse.json(
